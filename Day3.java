@@ -128,6 +128,24 @@ class Day3
 		}
 
 		System.out.println("Best pair: " + pairBest.X() + "," + pairBest.Y() + " at distance " + (pairBest.Offset()));
+
+		// For part two, figure out the minimum number of combined steps to reach any intersection
+
+		int cStepBest = Integer.MAX_VALUE;
+
+		for (Pair pairCur : set0)
+		{
+			int cStep0 = listPair0.indexOf(pairCur) + 1;
+			int cStep1 = listPair1.indexOf(pairCur) + 1;
+
+			int cStepCur = cStep0 + cStep1;
+			if (cStepCur < cStepBest)
+			{
+				cStepBest = cStepCur;
+			}
+		}
+
+		System.out.println("Minimum step count to intersection: " + cStepBest);
 	}
 
 	static void FillCoords(String strIn, ArrayList<Pair> listPair)
