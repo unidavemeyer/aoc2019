@@ -66,10 +66,18 @@ class Day4
 				{
 					if (aN[iN] == aN[iN - 1])
 					{
-						// Found a double, so this is a legal value
+						// Found a double, so this could be a legal value
 
-						++cPass;
-						break;
+						// For part 2, we must have exactly a pair somewhere (not a triple or more), although
+						//  the presence of longer runs doesn't invalidate the password if there is elsewhere
+						//  exactly a pair. So, check for exactly a pair.
+
+						if ((iN < 2 || aN[iN - 2] != aN[iN]) &&
+								(iN > 4 || aN[iN + 1] != aN[iN]))
+						{
+							++cPass;
+							break;
+						}
 					}
 				}
 
