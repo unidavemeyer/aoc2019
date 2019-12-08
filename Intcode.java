@@ -216,7 +216,7 @@ class Intcode
 		int cNCur = (m_aNOutput == null) ? 0 : m_aNOutput.length;
 		cNCur++;
 
-		m_aNOutput = Arrays.copyOf(m_aNOutput, cNCur);
+		m_aNOutput = (m_aNOutput == null) ? new int[cNCur] : Arrays.copyOf(m_aNOutput, cNCur);
 		m_aNOutput[cNCur - 1] = nValue;
 
 		m_iOp += 2;
