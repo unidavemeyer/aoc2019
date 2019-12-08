@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 import java.util.HashMap;
 
 /** Day 6 driver and solutions
@@ -13,7 +14,7 @@ class Day6
 	{
 		Day6 day = new Day6();
 
-		day.Part1();
+		day.Part2();
 	}
 
 	public Day6()
@@ -42,6 +43,17 @@ class Day6
 		m_fDebug = false;
 		LoadOrbits(s_aStrInput1);
 		SumOrbits();
+	}
+
+	void Part2()
+	{
+		m_fDebug = true;
+		LoadOrbits(s_aStrInput1);
+
+		String[] aStrYouCom = AStrBetween("YOU", "COM");
+		String[] aStrSanCom = AStrBetween("SAN", "COM");
+
+		CalculateTransfer(aStrYouCom, aStrSanCom);
 	}
 
 	void LoadOrbits(String[] aStrIn)
@@ -85,6 +97,46 @@ class Day6
 		String center = m_mapSatelliteCenter.get(satellite);
 		SumOrbits(center);
 		m_mapSatelliteCOrbit.put(satellite, m_mapSatelliteCOrbit.getOrDefault(center, -1) + 1);
+	}
+
+	String[] AStrBetween(String strLeaf, String strRoot)
+	{
+		ArrayList<String> listStr = new ArrayList<>();
+
+		if (m_fDebug) { System.out.println("Path from " + strLeaf + " to " + strRoot + ":"); }
+
+		String strCur = strLeaf;
+		while (strCur != strRoot)
+		{
+			String strNext = m_mapSatelliteCenter.get(strCur);
+			if (strNext == null)
+				break;
+
+			listStr.add(strNext);
+			strCur = strNext;
+
+			if (m_fDebug) { System.out.println("  " + strCur); }
+		}
+
+		String[] aStr = listStr.toArray(new String[1]);
+
+		return aStr;
+	}
+
+	void CalculateTransfer(String[] aStrYouCom, String[] aStrSanCom)
+	{
+		int iYou = aStrYouCom.length - 1;
+		int iSan = aStrSanCom.length - 1;
+
+		while (iYou > 0 && iSan > 0 && aStrYouCom[iYou].compareTo(aStrSanCom[iSan]) == 0)
+		{
+			--iYou;
+			--iSan;
+		}
+
+		if (m_fDebug) { System.out.println("YOU: " + iYou + "/" + aStrYouCom.length + "; SAN: " + iSan + "/" + aStrSanCom.length); }
+
+		System.out.println("Transfer takes " + (iYou + iSan + 2));
 	}
 
 	// My problem input for part 1 (assuming it'll be the same for part 2, but who knows)
