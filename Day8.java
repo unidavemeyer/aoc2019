@@ -6,7 +6,38 @@ class Day8
 	{
 		// Example1();
 
-		Part1();
+		// Part1();
+
+		Part2();
+	}
+
+	static void Part2()
+	{
+		Image image = new Image();
+		image.Load(s_strPart1, 25, 6);
+
+		char[] aChFlat = new char[25*6];
+
+	flat:
+		for (int i = 0; i < aChFlat.length; ++i)
+		{
+			// Find the first layer at this point that has a value other than 2 and put it in
+			//  the Flat image
+
+			for (Layer layer : image.m_aLayer)
+			{
+				if (layer.m_aPixel[i] != 2)
+				{
+					aChFlat[i] = (layer.m_aPixel[i] == 0) ? ' ' : 'X';
+					continue flat;
+				}
+			}
+		}
+
+		for (int y = 0; y < 6; ++y)
+		{
+			System.out.println(String.valueOf(aChFlat, y * 25, 25));
+		}
 	}
 
 	static void Part1()
