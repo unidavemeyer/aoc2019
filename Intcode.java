@@ -229,21 +229,25 @@ class Intcode
 		for (int iParam = 0; iParam < cParam; ++iParam)
 		{
 			long nOp = GetOp(m_iOp + iParam + 1);
+			long iOp = -1;
 			switch ((int)aNMode[iParam])
 			{
 			case 0:
 				// Position mode
 				aNParam[iParam] = GetOp(nOp);
+				iOp = nOp;
 				break;
 
 			case 1:
 				// Immediate mode
 				aNParam[iParam] = nOp;
+				iOp = m_iOp + iParam + 1;
 				break;
 
 			case 2:
 				// Relative mode
 				aNParam[iParam] = GetOp(m_iOpRelBase + nOp);
+				iOp = m_iOpRelBase + nOp;
 				break;
 
 			default:
@@ -251,19 +255,67 @@ class Intcode
 				break;
 			}
 
-			if (m_fDebug) { System.out.println("Parameter " + iParam + " : " + aNParam[iParam] + " (mode " + aNMode[iParam] + ")"); }
+			if (m_fDebug) { System.out.println("Parameter " + iParam + " : " + aNParam[iParam] + " (mode " + aNMode[iParam] + ", addr " + iOp + ")"); }
 		}
 
 		return aNParam;
 	}
 
+	long GetOpTarget(int iOp, int diOp)
+	{
+		// NOTE: Similar to parameters, output targets can also support both positional and relative modes (but not immediate)
+		//  but they don't do the second layer of unpacking -- they just report which address to use
+
+		long[] aNMode = ANMode(GetOp(iOp), diOp);
+
+		long nOp = GetOp(iOp + diOp);
+		long iOpOut = -1;
+
+		switch ((int)aNMode[diOp - 1])
+		{
+		case 0:
+			// Position mode
+			iOpOut = nOp;
+			break;
+
+		case 2:
+			// Relative mode
+			iOpOut = m_iOpRelBase + nOp;
+			break;
+
+		default:
+			System.out.println("Oops, got target mode " + aNMode[diOp - 1]);
+			iOpOut = -1;
+			break;
+		}
+
+		if (m_fDebug) { System.out.println("Get Op Target: addr " + iOpOut + ", mode " + aNMode[diOp - 1] + ", orig op " + nOp); }
+
+		return iOpOut;
+	}
+
+	String StrOpsDebug(int iOp, int cOp)
+	{
+		String strOut = String.valueOf(GetOp(iOp));
+
+		for (int diOp = 1; diOp < cOp; diOp++)
+		{
+			strOut = strOut.concat(",");
+			strOut = strOut.concat(String.valueOf(GetOp(iOp + diOp)));
+		}
+
+		return strOut;
+	}
+
 	void RunAdd()
 	{
+		if (m_fDebug) { System.out.println("  Add: " + StrOpsDebug(m_iOp, 4)); }
+
 		long[] aNParam = ANParam(2);
 
 		long a = aNParam[0];
 		long b = aNParam[1];
-		long iOpDst = GetOp(m_iOp + 3);
+		long iOpDst = GetOpTarget(m_iOp, 3);
 
 		if (m_fDebug) { System.out.println("Adding: " + a + " + " + b + " -> " + iOpDst); }
 
@@ -274,11 +326,13 @@ class Intcode
 
 	void RunMultiply()
 	{
+		if (m_fDebug) { System.out.println("  Multiply: " + StrOpsDebug(m_iOp, 4)); }
+
 		long[] aNParam = ANParam(2);
 
 		long a = aNParam[0];
 		long b = aNParam[1];
-		long iOpDst = GetOp(m_iOp + 3);
+		long iOpDst = GetOpTarget(m_iOp, 3);
 
 		if (m_fDebug) { System.out.println("Multiplying: " + a + " * " + b + " -> " + iOpDst); }
 
@@ -303,7 +357,10 @@ class Intcode
 
 	boolean FTryRunInput()
 	{
-		long iAddr = GetOp(m_iOp + 1);
+		if (m_fDebug) { System.out.println("  Input: " + StrOpsDebug(m_iOp, 2)); }
+
+		long iAddr = GetOpTarget(m_iOp, 1);
+
 		if (!FTryGetInput(iAddr))
 		{
 			return false;
@@ -315,6 +372,8 @@ class Intcode
 
 	void RunOutput()
 	{
+		if (m_fDebug) { System.out.println("  Output: " + StrOpsDebug(m_iOp, 2)); }
+
 		long[] aNParam = ANParam(1);
 
 		long nValue = aNParam[0];
@@ -334,6 +393,8 @@ class Intcode
 
 	void RunJumpIfTrue()
 	{
+		if (m_fDebug) { System.out.println("  JumpTrue: " + StrOpsDebug(m_iOp, 3)); }
+
 		long[] aNParam = ANParam(2);
 		long test = aNParam[0];
 		long iOp = aNParam[1];
@@ -353,6 +414,8 @@ class Intcode
 
 	void RunJumpIfFalse()
 	{
+		if (m_fDebug) { System.out.println("  JumpFalse: " + StrOpsDebug(m_iOp, 3)); }
+
 		long[] aNParam = ANParam(2);
 		long test = aNParam[0];
 		long iOp = aNParam[1];
@@ -372,10 +435,12 @@ class Intcode
 
 	void RunLessThan()
 	{
+		if (m_fDebug) { System.out.println("  LessThan: " + StrOpsDebug(m_iOp, 4)); }
+
 		long[] aNParam = ANParam(2);
 		long a = aNParam[0];
 		long b = aNParam[1];
-		long iOpDst = GetOp(m_iOp + 3);
+		long iOpDst = GetOpTarget(m_iOp, 3);
 
 		if (a < b)
 		{
@@ -395,10 +460,12 @@ class Intcode
 
 	void RunEquals()
 	{
+		if (m_fDebug) { System.out.println("  Equals: " + StrOpsDebug(m_iOp, 4)); }
+
 		long[] aNParam = ANParam(2);
 		long a = aNParam[0];
 		long b = aNParam[1];
-		long iOpDst = GetOp(m_iOp + 3);
+		long iOpDst = GetOpTarget(m_iOp, 3);
 
 		if (a == b)
 		{
@@ -418,6 +485,8 @@ class Intcode
 
 	void RunAddRelBase()
 	{
+		if (m_fDebug) { System.out.println("  AddRelBase: " + StrOpsDebug(m_iOp, 2)); }
+
 		long[] aNParam = ANParam(1);
 		long dRel = aNParam[0];
 
