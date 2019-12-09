@@ -113,8 +113,8 @@ class Day7
 			ic.SetOps(aNProgram);
 			ic.RunOps();
 
-			int[] aNOutput = ic.ANOutput();
-			nCur = aNOutput[0];
+			long[] aNOutput = ic.ANOutput();
+			nCur = (int)aNOutput[0];
 		}
 
 		return nCur;
@@ -176,7 +176,7 @@ class Day7
 				ic.AddInput(nCur);
 				ic.RunOps();
 
-				nCur = ic.NOutputLast();
+				nCur = (int)ic.NOutputLast();
 			}
 		}
 

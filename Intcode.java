@@ -48,33 +48,44 @@ class Intcode
 
 	int m_iOp = 0;
 	int m_iOpRelBase = 0;
-	HashMap<Integer, Integer> m_mapIopOp = null;
+	HashMap<Long, Long> m_mapIopOp = null;
 
 	// Input stream and location
 
 	int m_iNInput = 0;
 	int m_cNInput = 0;
-	int[] m_aNInput = null;
+	long[] m_aNInput = null;
 
 	// Output stream
 
 	int m_iNOutput = 0;
-	int[] m_aNOutput = null;
+	long[] m_aNOutput = null;
 
 	boolean m_fDebug = false;
 
 	public void SetInput(int[] aNInput)
+	{
+		long[] aNInputLong = new long[aNInput.length];
+		for (int i = 0; i < aNInput.length; ++i)
+		{
+			aNInputLong[i] = aNInput[i];
+		}
+
+		SetInput(aNInputLong);
+	}
+
+	public void SetInput(long[] aNInput)
 	{
 		m_aNInput = Arrays.copyOf(aNInput, aNInput.length);
 		m_iNInput = 0;
 		m_cNInput = m_aNInput.length;
 	}
 
-	public void AddInput(int nInput)
+	public void AddInput(long nInput)
 	{
 		if (m_aNInput == null)
 		{
-			m_aNInput = new int[8];	// arbitrary size
+			m_aNInput = new long[8];	// arbitrary size
 		}
 
 		if (m_cNInput >= m_aNInput.length)
@@ -89,10 +100,10 @@ class Intcode
 
 	public boolean FIsRunning()
 	{
-		return m_mapIopOp.getOrDefault(m_iOp, 0) % 100 != 99;
+		return m_mapIopOp.getOrDefault(m_iOp, 0L) % 100 != 99;
 	}
 
-	public int NOutputLast()
+	public long NOutputLast()
 	{
 		if (m_iNOutput >= m_aNOutput.length)
 		{
@@ -105,13 +116,24 @@ class Intcode
 
 	public void SetOps(int[] aNOp)
 	{
+		long[] aNOpLong = new long[aNOp.length];
+		for (int i = 0; i < aNOp.length; ++i)
+		{
+			aNOpLong[i] = aNOp[i];
+		}
+
+		SetOps(aNOpLong);
+	}
+
+	public void SetOps(long[] aNOp)
+	{
 		m_iOp = 0;
 
 		m_mapIopOp = new HashMap<>();
 
 		for (int iOp = 0; iOp < aNOp.length; ++iOp)
 		{
-			m_mapIopOp.put(iOp, aNOp[iOp]);
+			m_mapIopOp.put((long)iOp, aNOp[iOp]);
 		}
 	}
 
@@ -120,19 +142,19 @@ class Intcode
 		m_fDebug = fDebug;
 	}
 
-	public int GetOp(int iOp)
+	public long GetOp(long iOp)
 	{
 		// NOTE: memory is to be assumed as zero-filled until written
 
-		return m_mapIopOp.getOrDefault(iOp, 0);
+		return m_mapIopOp.getOrDefault(iOp, 0L);
 	}
 
-	public void SetOp(int iOp, int n)
+	public void SetOp(long iOp, long n)
 	{
 		m_mapIopOp.put(iOp, n);
 	}
 
-	public int[] ANOutput()
+	public long[] ANOutput()
 	{
 		return m_aNOutput;
 	}
@@ -141,7 +163,7 @@ class Intcode
 	{
 		for (;;)
 		{
-			switch (GetOp(m_iOp) % 100)
+			switch ((int)GetOp(m_iOp) % 100)
 			{
 			case 1:
 				RunAdd();
@@ -183,31 +205,31 @@ class Intcode
 		}
 	}
 
-	int[] ANMode(int op, int cMode)
+	long[] ANMode(long op, int cMode)
 	{
-		int[] aNMode = new int[cMode];
+		long[] aNMode = new long[cMode];
 
-		op /= 100;
+		op /= 100L;
 
 		for (int iMode = 0; iMode < cMode; ++iMode)
 		{
-			aNMode[iMode] = op % 10;
-			op /= 10;
+			aNMode[iMode] = op % 10L;
+			op /= 10L;
 		}
 
 		return aNMode;
 	}
 
-	int[] ANParam(int cParam)
+	long[] ANParam(int cParam)
 	{
-		int[] aNMode = ANMode(GetOp(m_iOp), cParam);
+		long[] aNMode = ANMode(GetOp(m_iOp), cParam);
 
-		int[] aNParam = new int[cParam];
+		long[] aNParam = new long[cParam];
 
 		for (int iParam = 0; iParam < cParam; ++iParam)
 		{
-			int nOp = GetOp(m_iOp + iParam + 1);
-			switch (aNMode[iParam])
+			long nOp = GetOp(m_iOp + iParam + 1);
+			switch ((int)aNMode[iParam])
 			{
 			case 0:
 				// Position mode
@@ -237,11 +259,11 @@ class Intcode
 
 	void RunAdd()
 	{
-		int[] aNParam = ANParam(2);
+		long[] aNParam = ANParam(2);
 
-		int a = aNParam[0];
-		int b = aNParam[1];
-		int iOpDst = GetOp(m_iOp + 3);
+		long a = aNParam[0];
+		long b = aNParam[1];
+		long iOpDst = GetOp(m_iOp + 3);
 
 		if (m_fDebug) { System.out.println("Adding: " + a + " + " + b + " -> " + iOpDst); }
 
@@ -252,11 +274,11 @@ class Intcode
 
 	void RunMultiply()
 	{
-		int[] aNParam = ANParam(2);
+		long[] aNParam = ANParam(2);
 
-		int a = aNParam[0];
-		int b = aNParam[1];
-		int iOpDst = GetOp(m_iOp + 3);
+		long a = aNParam[0];
+		long b = aNParam[1];
+		long iOpDst = GetOp(m_iOp + 3);
 
 		if (m_fDebug) { System.out.println("Multiplying: " + a + " * " + b + " -> " + iOpDst); }
 
@@ -265,7 +287,7 @@ class Intcode
 		m_iOp += 4;
 	}
 
-	boolean FTryGetInput(int iAddr)
+	boolean FTryGetInput(long iAddr)
 	{
 		if (m_cNInput < 1)
 			return false;
@@ -281,7 +303,7 @@ class Intcode
 
 	boolean FTryRunInput()
 	{
-		int iAddr = GetOp(m_iOp + 1);
+		long iAddr = GetOp(m_iOp + 1);
 		if (!FTryGetInput(iAddr))
 		{
 			return false;
@@ -293,9 +315,9 @@ class Intcode
 
 	void RunOutput()
 	{
-		int[] aNParam = ANParam(1);
+		long[] aNParam = ANParam(1);
 
-		int nValue = aNParam[0];
+		long nValue = aNParam[0];
 
 		if (m_fDebug) { System.out.println("OUTPUT: op " + m_iOp + " output = " + nValue); }
 
@@ -304,7 +326,7 @@ class Intcode
 		int cNCur = (m_aNOutput == null) ? 0 : m_aNOutput.length;
 		cNCur++;
 
-		m_aNOutput = (m_aNOutput == null) ? new int[cNCur] : Arrays.copyOf(m_aNOutput, cNCur);
+		m_aNOutput = (m_aNOutput == null) ? new long[cNCur] : Arrays.copyOf(m_aNOutput, cNCur);
 		m_aNOutput[cNCur - 1] = nValue;
 
 		m_iOp += 2;
@@ -312,15 +334,15 @@ class Intcode
 
 	void RunJumpIfTrue()
 	{
-		int[] aNParam = ANParam(2);
-		int test = aNParam[0];
-		int iOp = aNParam[1];
+		long[] aNParam = ANParam(2);
+		long test = aNParam[0];
+		long iOp = aNParam[1];
 
 		if (test != 0)
 		{
 			if (m_fDebug) { System.out.println("Test " + test + " != 0 => true; jump to " + iOp); }
 
-			m_iOp = iOp;
+			m_iOp = (int)iOp;
 			return;
 		}
 
@@ -331,15 +353,15 @@ class Intcode
 
 	void RunJumpIfFalse()
 	{
-		int[] aNParam = ANParam(2);
-		int test = aNParam[0];
-		int iOp = aNParam[1];
+		long[] aNParam = ANParam(2);
+		long test = aNParam[0];
+		long iOp = aNParam[1];
 
 		if (test == 0)
 		{
 			if (m_fDebug) { System.out.println("Test " + test + " == 0 => true; jump to " + iOp); }
 
-			m_iOp = iOp;
+			m_iOp = (int)iOp;
 			return;
 		}
 
@@ -350,10 +372,10 @@ class Intcode
 
 	void RunLessThan()
 	{
-		int[] aNParam = ANParam(2);
-		int a = aNParam[0];
-		int b = aNParam[1];
-		int iOpDst = GetOp(m_iOp + 3);
+		long[] aNParam = ANParam(2);
+		long a = aNParam[0];
+		long b = aNParam[1];
+		long iOpDst = GetOp(m_iOp + 3);
 
 		if (a < b)
 		{
@@ -373,10 +395,10 @@ class Intcode
 
 	void RunEquals()
 	{
-		int[] aNParam = ANParam(2);
-		int a = aNParam[0];
-		int b = aNParam[1];
-		int iOpDst = GetOp(m_iOp + 3);
+		long[] aNParam = ANParam(2);
+		long a = aNParam[0];
+		long b = aNParam[1];
+		long iOpDst = GetOp(m_iOp + 3);
 
 		if (a == b)
 		{
@@ -396,8 +418,8 @@ class Intcode
 
 	void RunAddRelBase()
 	{
-		int[] aNParam = ANParam(1);
-		int dRel = aNParam[0];
+		long[] aNParam = ANParam(1);
+		long dRel = aNParam[0];
 
 		if (m_fDebug) { System.out.println("Rel base delta: " + dRel + " on existing " + m_iOpRelBase); }
 
