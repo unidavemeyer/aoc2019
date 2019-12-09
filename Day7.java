@@ -9,8 +9,9 @@ class Day7
 		// Example1();
 		// Example2();
 		// Example3();
+		// Part1();
 
-		Part1();
+		Part2();
 	}
 
 	static void Example1()
@@ -50,6 +51,21 @@ class Day7
 		}
 
 		System.out.println("Maximal output: " + NMaximalAmps(aNProgram, setPhase, aNPhase, 0, 0));
+	}
+
+	static void Part2()
+	{
+		int[] aNProgram = {3,8,1001,8,10,8,105,1,0,0,21,46,67,76,97,118,199,280,361,442,99999,3,9,1002,9,3,9,101,4,9,9,102,3,9,9,1001,9,3,9,1002,9,2,9,4,9,99,3,9,102,2,9,9,101,5,9,9,1002,9,2,9,101,2,9,9,4,9,99,3,9,101,4,9,9,4,9,99,3,9,1001,9,4,9,102,2,9,9,1001,9,4,9,1002,9,5,9,4,9,99,3,9,102,3,9,9,1001,9,2,9,1002,9,3,9,1001,9,3,9,4,9,99,3,9,101,1,9,9,4,9,3,9,1001,9,2,9,4,9,3,9,1001,9,1,9,4,9,3,9,1001,9,1,9,4,9,3,9,101,2,9,9,4,9,3,9,102,2,9,9,4,9,3,9,1002,9,2,9,4,9,3,9,1002,9,2,9,4,9,3,9,1001,9,2,9,4,9,3,9,101,1,9,9,4,9,99,3,9,102,2,9,9,4,9,3,9,101,2,9,9,4,9,3,9,102,2,9,9,4,9,3,9,1002,9,2,9,4,9,3,9,102,2,9,9,4,9,3,9,1001,9,2,9,4,9,3,9,1001,9,1,9,4,9,3,9,102,2,9,9,4,9,3,9,101,1,9,9,4,9,3,9,101,2,9,9,4,9,99,3,9,1002,9,2,9,4,9,3,9,1001,9,1,9,4,9,3,9,101,2,9,9,4,9,3,9,1002,9,2,9,4,9,3,9,102,2,9,9,4,9,3,9,1001,9,1,9,4,9,3,9,1002,9,2,9,4,9,3,9,101,1,9,9,4,9,3,9,1002,9,2,9,4,9,3,9,1001,9,1,9,4,9,99,3,9,1001,9,2,9,4,9,3,9,1002,9,2,9,4,9,3,9,1002,9,2,9,4,9,3,9,101,2,9,9,4,9,3,9,1001,9,1,9,4,9,3,9,101,1,9,9,4,9,3,9,1001,9,2,9,4,9,3,9,1001,9,1,9,4,9,3,9,1002,9,2,9,4,9,3,9,1001,9,1,9,4,9,99,3,9,1002,9,2,9,4,9,3,9,101,2,9,9,4,9,3,9,1002,9,2,9,4,9,3,9,101,2,9,9,4,9,3,9,1001,9,2,9,4,9,3,9,101,1,9,9,4,9,3,9,102,2,9,9,4,9,3,9,102,2,9,9,4,9,3,9,1001,9,2,9,4,9,3,9,1002,9,2,9,4,9,99};
+		int[] aNPhaseAll = { 5,6,7,8,9 };
+		int[] aNPhase = new int[5];
+
+		HashSet<Integer> setPhase = new HashSet<>();
+		for (int nPhase : aNPhaseAll)
+		{
+			setPhase.add(nPhase);
+		}
+
+		System.out.println("Maximal output: " + NMaximalAmpsFeedback(aNProgram, setPhase, aNPhase, 0, 0));
 	}
 
 	static int NMaximalAmps(int[] aNProgram, HashSet<Integer> setPhase, int[] aNPhase, int iPhase, int nInit)
@@ -99,6 +115,69 @@ class Day7
 
 			int[] aNOutput = ic.ANOutput();
 			nCur = aNOutput[0];
+		}
+
+		return nCur;
+	}
+
+	static int NMaximalAmpsFeedback(int[] aNProgram, HashSet<Integer> setPhase, int[] aNPhase, int iPhase, int nInit)
+	{
+		int nBest = -1;	// BB (davidm) sufficient?
+
+		for (int nPhaseCur : setPhase)
+		{
+			aNPhase[iPhase] = nPhaseCur;
+
+			HashSet<Integer> setPhaseCur = new HashSet<>();
+			setPhaseCur.addAll(setPhase);
+			setPhaseCur.remove(nPhaseCur);
+
+			int nCur;
+			if (iPhase < aNPhase.length - 1)
+			{
+				nCur = NMaximalAmpsFeedback(aNProgram, setPhaseCur, aNPhase, iPhase + 1, nInit);
+			}
+			else
+			{
+				nCur = NRunAmpsFeedback(aNProgram, aNPhase, nInit);
+			}
+
+			if (nCur > nBest)
+			{
+				nBest = nCur;
+			}
+		}
+
+		return nBest;
+	}
+
+	static int NRunAmpsFeedback(int[] aNProgram, int[] aNPhase, int nInit)
+	{
+		// Initialize all of the interpreters with program and phase, and run them up to the next input
+
+		Intcode[] aIc = new Intcode[aNPhase.length];
+		for (int i = 0; i < aNPhase.length; ++i)
+		{
+			aIc[i] = new Intcode();
+			Intcode ic = aIc[i];
+			int nPhase = aNPhase[i];
+
+			ic.SetOps(aNProgram);
+			ic.AddInput(nPhase);
+			ic.RunOps();
+		}
+
+		int nCur = nInit;
+
+		while (aIc[0].FIsRunning())
+		{
+			for (Intcode ic : aIc)
+			{
+				ic.AddInput(nCur);
+				ic.RunOps();
+
+				nCur = ic.NOutputLast();
+			}
 		}
 
 		return nCur;

@@ -49,21 +49,59 @@ class Intcode
 	// Input stream and location
 
 	int m_iNInput = 0;
+	int m_cNInput = 0;
 	int[] m_aNInput = null;
 
 	// Output stream
 
+	int m_iNOutput = 0;
 	int[] m_aNOutput = null;
 
 	boolean m_fDebug = false;
 
 	public void SetInput(int[] aNInput)
 	{
-		m_aNInput = aNInput;
+		m_aNInput = Arrays.copyOf(aNInput, aNInput.length);
+		m_iNInput = 0;
+		m_cNInput = m_aNInput.length;
+	}
+
+	public void AddInput(int nInput)
+	{
+		if (m_aNInput == null)
+		{
+			m_aNInput = new int[8];	// arbitrary size
+		}
+
+		if (m_cNInput >= m_aNInput.length)
+		{
+			System.out.println("Oops: Input full!");
+			return;
+		}
+
+		m_aNInput[(m_iNInput + m_cNInput) % m_aNInput.length] = nInput;
+		m_cNInput++;
+	}
+
+	public boolean FIsRunning()
+	{
+		return m_iOp < m_aNOp.length && m_aNOp[m_iOp] % 100 != 99;
+	}
+
+	public int NOutputLast()
+	{
+		if (m_iNOutput >= m_aNOutput.length)
+		{
+			System.err.println("Oops: Ran out of output");
+			return -1;
+		}
+
+		return m_aNOutput[m_iNOutput++];
 	}
 
 	public void SetOps(int[] aNOp)
 	{
+		m_iOp = 0;
 		m_aNOp = aNOp;
 	}
 
@@ -84,9 +122,6 @@ class Intcode
 
 	public void RunOps()
 	{
-		m_iOp = 0;
-		m_iNInput = 0;
-
 		while (m_iOp < m_aNOp.length)
 		{
 			switch (m_aNOp[m_iOp] % 100)
@@ -98,7 +133,11 @@ class Intcode
 				RunMultiply();
 				break;
 			case 3:
-				RunInput();
+				if (!FTryRunInput())
+				{
+					if (m_fDebug) { System.out.println("Stalled on input"); }
+					return;
+				}
 				break;
 			case 4:
 				RunOutput();
@@ -188,19 +227,30 @@ class Intcode
 		m_iOp += 4;
 	}
 
-	void GetInput(int iAddr)
+	boolean FTryGetInput(int iAddr)
 	{
-		m_aNOp[iAddr] = m_aNInput[m_iNInput++];
+		if (m_cNInput < 1)
+			return false;
 
-		if (m_fDebug) { System.out.println("Input value " + m_aNOp[iAddr] + " to addr " + iAddr + "; input index now " + m_iNInput); }
+		m_aNOp[iAddr] = m_aNInput[m_iNInput];
+		m_iNInput = (m_iNInput + 1) % m_aNInput.length;
+		m_cNInput--;
+
+		if (m_fDebug) { System.out.println("Input value " + m_aNOp[iAddr] + " to addr " + iAddr + "; input index now " + m_iNInput + " with count " + m_cNInput); }
+
+		return true;
 	}
 
-	void RunInput()
+	boolean FTryRunInput()
 	{
 		int iAddr = m_aNOp[m_iOp + 1];
-		GetInput(iAddr);
+		if (!FTryGetInput(iAddr))
+		{
+			return false;
+		}
 
 		m_iOp += 2;
+		return true;
 	}
 
 	void RunOutput()
