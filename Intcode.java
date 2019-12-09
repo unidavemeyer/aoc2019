@@ -1,5 +1,6 @@
 
 import java.util.Arrays;
+import java.util.HashMap;
 
 
 
@@ -41,10 +42,13 @@ class Intcode
 		interpReal.RunOps();
 	}
 
-	// Ops and current op stream location (instruction pointer)
+	// Ops and current op stream locations (instruction pointer, relative base)
+
+	// NOTE: ops are in a hash to support arbitrary addressing modes (whee!)
 
 	int m_iOp = 0;
-	int[] m_aNOp = null;
+	int m_iOpRelBase = 0;
+	HashMap<Integer, Integer> m_mapIopOp = null;
 
 	// Input stream and location
 
@@ -85,7 +89,7 @@ class Intcode
 
 	public boolean FIsRunning()
 	{
-		return m_iOp < m_aNOp.length && m_aNOp[m_iOp] % 100 != 99;
+		return m_mapIopOp.getOrDefault(m_iOp, 0) % 100 != 99;
 	}
 
 	public int NOutputLast()
@@ -102,7 +106,13 @@ class Intcode
 	public void SetOps(int[] aNOp)
 	{
 		m_iOp = 0;
-		m_aNOp = aNOp;
+
+		m_mapIopOp = new HashMap<>();
+
+		for (int iOp = 0; iOp < aNOp.length; ++iOp)
+		{
+			m_mapIopOp.put(iOp, aNOp[iOp]);
+		}
 	}
 
 	public void SetDebug(boolean fDebug)
@@ -112,7 +122,14 @@ class Intcode
 
 	public int GetOp(int iOp)
 	{
-		return m_aNOp[iOp];
+		// NOTE: memory is to be assumed as zero-filled until written
+
+		return m_mapIopOp.getOrDefault(iOp, 0);
+	}
+
+	public void SetOp(int iOp, int n)
+	{
+		m_mapIopOp.put(iOp, n);
 	}
 
 	public int[] ANOutput()
@@ -122,9 +139,9 @@ class Intcode
 
 	public void RunOps()
 	{
-		while (m_iOp < m_aNOp.length)
+		for (;;)
 		{
-			switch (m_aNOp[m_iOp] % 100)
+			switch (GetOp(m_iOp) % 100)
 			{
 			case 1:
 				RunAdd();
@@ -154,6 +171,9 @@ class Intcode
 			case 8:
 				RunEquals();
 				break;
+			case 9:
+				RunAddRelBase();
+				break;
 			case 99:
 				return;
 			default:
@@ -161,8 +181,6 @@ class Intcode
 				return;
 			}
 		}
-
-		System.out.println("Also oops!");
 	}
 
 	int[] ANMode(int op, int cMode)
@@ -182,14 +200,34 @@ class Intcode
 
 	int[] ANParam(int cParam)
 	{
-		int[] aNMode = ANMode(m_aNOp[m_iOp], cParam);
+		int[] aNMode = ANMode(GetOp(m_iOp), cParam);
 
 		int[] aNParam = new int[cParam];
 
 		for (int iParam = 0; iParam < cParam; ++iParam)
 		{
-			int nOp = m_aNOp[m_iOp + iParam + 1];
-			aNParam[iParam] = (aNMode[iParam] == 0) ? m_aNOp[nOp] : nOp;
+			int nOp = GetOp(m_iOp + iParam + 1);
+			switch (aNMode[iParam])
+			{
+			case 0:
+				// Position mode
+				aNParam[iParam] = GetOp(nOp);
+				break;
+
+			case 1:
+				// Immediate mode
+				aNParam[iParam] = nOp;
+				break;
+
+			case 2:
+				// Relative mode
+				aNParam[iParam] = GetOp(m_iOpRelBase + nOp);
+				break;
+
+			default:
+				System.out.println("Oops, got mode " + aNMode[iParam]);
+				break;
+			}
 
 			if (m_fDebug) { System.out.println("Parameter " + iParam + " : " + aNParam[iParam] + " (mode " + aNMode[iParam] + ")"); }
 		}
@@ -203,11 +241,11 @@ class Intcode
 
 		int a = aNParam[0];
 		int b = aNParam[1];
-		int iOpDst = m_aNOp[m_iOp + 3];
+		int iOpDst = GetOp(m_iOp + 3);
 
 		if (m_fDebug) { System.out.println("Adding: " + a + " + " + b + " -> " + iOpDst); }
 
-		m_aNOp[iOpDst] = a + b;
+		SetOp(iOpDst, a + b);
 
 		m_iOp += 4;
 	}
@@ -218,11 +256,11 @@ class Intcode
 
 		int a = aNParam[0];
 		int b = aNParam[1];
-		int iOpDst = m_aNOp[m_iOp + 3];
+		int iOpDst = GetOp(m_iOp + 3);
 
 		if (m_fDebug) { System.out.println("Multiplying: " + a + " * " + b + " -> " + iOpDst); }
 
-		m_aNOp[iOpDst] = a * b;
+		SetOp(iOpDst, a * b);
 
 		m_iOp += 4;
 	}
@@ -232,18 +270,18 @@ class Intcode
 		if (m_cNInput < 1)
 			return false;
 
-		m_aNOp[iAddr] = m_aNInput[m_iNInput];
+		SetOp(iAddr, m_aNInput[m_iNInput]);
 		m_iNInput = (m_iNInput + 1) % m_aNInput.length;
 		m_cNInput--;
 
-		if (m_fDebug) { System.out.println("Input value " + m_aNOp[iAddr] + " to addr " + iAddr + "; input index now " + m_iNInput + " with count " + m_cNInput); }
+		if (m_fDebug) { System.out.println("Input value " + GetOp(iAddr) + " to addr " + iAddr + "; input index now " + m_iNInput + " with count " + m_cNInput); }
 
 		return true;
 	}
 
 	boolean FTryRunInput()
 	{
-		int iAddr = m_aNOp[m_iOp + 1];
+		int iAddr = GetOp(m_iOp + 1);
 		if (!FTryGetInput(iAddr))
 		{
 			return false;
@@ -315,19 +353,19 @@ class Intcode
 		int[] aNParam = ANParam(2);
 		int a = aNParam[0];
 		int b = aNParam[1];
-		int iOpDst = m_aNOp[m_iOp + 3];
+		int iOpDst = GetOp(m_iOp + 3);
 
 		if (a < b)
 		{
 			if (m_fDebug) { System.out.println("Test " + a + " < " + b + " => true; 1 to " + iOpDst); }
 
-			m_aNOp[iOpDst] = 1;
+			SetOp(iOpDst, 1);
 		}
 		else
 		{
 			if (m_fDebug) { System.out.println("Test " + a + " < " + b + " => false; 0 to " + iOpDst); }
 
-			m_aNOp[iOpDst] = 0;
+			SetOp(iOpDst, 0);
 		}
 
 		m_iOp += 4;
@@ -338,21 +376,33 @@ class Intcode
 		int[] aNParam = ANParam(2);
 		int a = aNParam[0];
 		int b = aNParam[1];
-		int iOpDst = m_aNOp[m_iOp + 3];
+		int iOpDst = GetOp(m_iOp + 3);
 
 		if (a == b)
 		{
 			if (m_fDebug) { System.out.println("Test " + a + " == " + b + " => true; 1 to " + iOpDst); }
 
-			m_aNOp[iOpDst] = 1;
+			SetOp(iOpDst, 1);
 		}
 		else
 		{
 			if (m_fDebug) { System.out.println("Test " + a + " == " + b + " => false; 0 to " + iOpDst); }
 
-			m_aNOp[iOpDst] = 0;
+			SetOp(iOpDst, 0);
 		}
 
 		m_iOp += 4;
+	}
+
+	void RunAddRelBase()
+	{
+		int[] aNParam = ANParam(1);
+		int dRel = aNParam[0];
+
+		if (m_fDebug) { System.out.println("Rel base delta: " + dRel + " on existing " + m_iOpRelBase); }
+
+		m_iOpRelBase += dRel;
+
+		m_iOp += 2;
 	}
 }
