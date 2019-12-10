@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -14,7 +15,58 @@ class Day10
 		// Yes: Example4();
 		// Yes: Example5();
 
-		Part1();
+		// Yes: Part1();
+
+		Part2();
+	}
+
+	static void Part2()
+	{
+		String[] aStr = {
+			"#.#.##..#.###...##.#....##....###",
+			"...#..#.#.##.....#..##.#...###..#",
+			"####...#..#.##...#.##..####..#.#.",
+			"..#.#..#...#..####.##....#..####.",
+			"....##...#.##...#.#.#...#.#..##..",
+			".#....#.##.#.##......#..#..#..#..",
+			".#.......#.....#.....#...###.....",
+			"#.#.#.##..#.#...###.#.###....#..#",
+			"#.#..........##..###.......#...##",
+			"#.#.........##...##.#.##..####..#",
+			"###.#..#####...#..#.#...#..#.#...",
+			".##.#.##.........####.#.#...##...",
+			"..##...#..###.....#.#...#.#..#.##",
+			".#...#.....#....##...##...###...#",
+			"###...#..#....#............#.....",
+			".#####.#......#.......#.#.##..#.#",
+			"#.#......#.#.#.#.......##..##..##",
+			".#.##...##..#..##...##...##.....#",
+			"#.#...#.#.#.#.#..#...#...##...#.#",
+			"##.#..#....#..##.#.#....#.##...##",
+			"...###.#.#.......#.#..#..#...#.##",
+			".....##......#.....#..###.....##.",
+			"........##..#.#........##.......#",
+			"#.##.##...##..###.#....#....###.#",
+			"..##.##....##.#..#.##..#.....#...",
+			".#.#....##..###.#...##.#.#.#..#..",
+			"..#..##.##.#.##....#...#.........",
+			"#...#.#.#....#.......#.#...#..#.#",
+			"...###.##.#...#..#...##...##....#",
+			"...#..#.#.#..#####...#.#...####.#",
+			"##.#...#..##..#..###.#..........#",
+			"..........#..##..#..###...#..#...",
+			".#.##...#....##.....#.#...##...##",
+		};
+
+		AsterMap astermap = new AsterMap();
+		astermap.SetDebug(false);
+		astermap.Load(aStr);
+
+		astermap.SetBase(22, 28);
+		Pair[] aPair = astermap.APairVaporize();
+
+		Pair pairGone = aPair[199];
+		System.out.println("200th pair: " + pairGone.m_x + "," + pairGone.m_y + ": " + (pairGone.m_x * 100 + pairGone.m_y));
 	}
 
 	static void Part1()
@@ -283,11 +335,19 @@ class Day10
 		HashSet<Pair> m_setPair = null;	// Asteroid coordinates
 		int m_xMax = 0;
 		int m_yMax = 0;
+		Pair m_pairBase = null;
 		boolean m_fDebug = false;
 
 		public void SetDebug(boolean fDebug)
 		{
 			m_fDebug = fDebug;
+		}
+
+		public void SetBase(int x, int y)
+		{
+			m_pairBase = new Pair();
+			m_pairBase.m_x = x;
+			m_pairBase.m_y = y;
 		}
 
 		public void Load(String[] aStr)
@@ -310,6 +370,99 @@ class Day10
 					}
 				}
 			}
+		}
+
+		static class Lex
+				implements Comparable<Lex>
+		{
+			public int m_nTier = 0;
+			public double m_rad = 0.0;
+			public Pair m_pair = null;
+
+			Lex(int nTier, double rad, Pair pair)
+			{
+				m_nTier = nTier;
+				m_rad = rad;
+				m_pair = pair;
+			}
+
+			public int compareTo(Lex lexOther)
+			{
+				if (m_nTier < lexOther.m_nTier)
+					return -1;
+
+				if (m_nTier > lexOther.m_nTier)
+					return 1;
+
+				if (m_rad < lexOther.m_rad)
+					return -1;
+
+				if (m_rad > lexOther.m_rad)
+					return 1;
+
+				// BB (davidm) not necessarily consistent with equals...?
+
+				return 0;
+			}
+		}
+
+		public Pair[] APairVaporize()
+		{
+			// Calculate "tier" and then "pan" angle for all other pairs
+
+			ArrayList<Lex> listLex = new ArrayList<>();
+
+			for (Pair pair : m_setPair)
+			{
+				if (pair.equals(m_pairBase))
+					continue;
+
+				Pair dPair = m_pairBase.Minus(pair);
+				dPair.Reduce();
+
+				// Calculate tier
+
+				int nTier = 0;
+				Pair pairWalk = pair.Plus(dPair);
+				while (!pairWalk.equals(m_pairBase))
+				{
+					if (m_setPair.contains(pairWalk))
+						++nTier;
+
+					pairWalk = pairWalk.Plus(dPair);
+				}
+
+				// Calculate angle (0 = -y)
+
+				double rad = Math.atan2(-dPair.m_y, -dPair.m_x);
+				if (rad < -0.5 * Math.PI)
+				{
+					// Upper left quadrant should be quite positive
+
+					rad += 2.5 * Math.PI;
+				}
+				else
+				{
+					rad += 0.5 * Math.PI;
+				}
+
+				Lex lex = new Lex(nTier, rad, pair);
+				listLex.add(lex);
+			}
+
+			// Sort lexicographically by tier and then rad
+
+			listLex.sort(null);
+
+			// Send back the resulting list
+
+			Pair[] aPair = new Pair[listLex.size()];
+			for (int i = 0; i < listLex.size(); ++i)
+			{
+				aPair[i] = listLex.get(i).m_pair;
+			}
+
+			return aPair;
 		}
 
 		public void PrintSight()
