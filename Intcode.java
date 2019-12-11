@@ -81,6 +81,11 @@ class Intcode
 		m_cNInput = m_aNInput.length;
 	}
 
+	public static class InputFullError
+			extends Error
+	{
+	}
+
 	public void AddInput(long nInput)
 	{
 		if (m_aNInput == null)
@@ -90,8 +95,7 @@ class Intcode
 
 		if (m_cNInput >= m_aNInput.length)
 		{
-			System.out.println("Oops: Input full!");
-			return;
+			throw new InputFullError();
 		}
 
 		m_aNInput[(m_iNInput + m_cNInput) % m_aNInput.length] = nInput;
@@ -100,15 +104,19 @@ class Intcode
 
 	public boolean FIsRunning()
 	{
-		return m_mapIopOp.getOrDefault(m_iOp, 0L) % 100 != 99;
+		return (int)GetOp(m_iOp) % 100 != 99;
+	}
+
+	public static class OutputEmptyError
+			extends Error
+	{
 	}
 
 	public long NOutputLast()
 	{
 		if (m_iNOutput >= m_aNOutput.length)
 		{
-			System.err.println("Oops: Ran out of output");
-			return -1;
+			throw new OutputEmptyError();
 		}
 
 		return m_aNOutput[m_iNOutput++];
@@ -159,6 +167,11 @@ class Intcode
 		return m_aNOutput;
 	}
 
+	public static class IllegalOpError
+			extends Error
+	{
+	}
+
 	public void RunOps()
 	{
 		for (;;)
@@ -197,10 +210,10 @@ class Intcode
 				RunAddRelBase();
 				break;
 			case 99:
+				if (m_fDebug) { System.out.println("HALTING"); }
 				return;
 			default:
-				System.out.println("Oops!");
-				return;
+				throw new IllegalOpError();
 			}
 		}
 	}
@@ -218,6 +231,11 @@ class Intcode
 		}
 
 		return aNMode;
+	}
+
+	public static class IllegalModeError
+			extends Error
+	{
 	}
 
 	long[] ANParam(int cParam)
@@ -251,8 +269,7 @@ class Intcode
 				break;
 
 			default:
-				System.out.println("Oops, got mode " + aNMode[iParam]);
-				break;
+				throw new IllegalModeError();
 			}
 
 			if (m_fDebug) { System.out.println("Parameter " + iParam + " : " + aNParam[iParam] + " (mode " + aNMode[iParam] + ", addr " + iOp + ")"); }
@@ -284,9 +301,7 @@ class Intcode
 			break;
 
 		default:
-			System.out.println("Oops, got target mode " + aNMode[diOp - 1]);
-			iOpOut = -1;
-			break;
+			throw new IllegalModeError();
 		}
 
 		if (m_fDebug) { System.out.println("Get Op Target: addr " + iOpOut + ", mode " + aNMode[diOp - 1] + ", orig op " + nOp); }
