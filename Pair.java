@@ -34,6 +34,24 @@ class Pair
 		return pair;
 	}
 
+	public Pair Min(Pair pairOther)
+	{
+		Pair pair = new Pair();
+		pair.m_x = Math.min(m_x, pairOther.m_x);
+		pair.m_y = Math.min(m_y, pairOther.m_y);
+
+		return pair;
+	}
+
+	public Pair Max(Pair pairOther)
+	{
+		Pair pair = new Pair();
+		pair.m_x = Math.max(m_x, pairOther.m_x);
+		pair.m_y = Math.max(m_y, pairOther.m_y);
+
+		return pair;
+	}
+
 	public void Reduce()
 	{
 		if (m_x == 0)

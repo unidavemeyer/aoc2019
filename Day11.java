@@ -10,9 +10,12 @@ class Day11
 
 		HullRobot hr = new HullRobot();
 		hr.Load(aNProg);
+		hr.SetPanel(new Pair(0,0), HullRobot.Color.WHITE);	// NOTE: only for part 2
 		hr.Run();
 
 		System.out.println("Colored " + hr.CPanelColored() + " panels");
+
+		hr.PrintPanels();
 	}
 
 	static class HullRobot
@@ -54,6 +57,11 @@ class Day11
 		{
 			m_ic.SetOps(aNProg);
 			m_ic.SetDebug(false);
+		}
+
+		public void SetPanel(Pair pair, Color color)
+		{
+			m_mapPairColor.put(pair, color);
 		}
 
 		public void Run()
@@ -100,6 +108,33 @@ class Day11
 		public int CPanelColored()
 		{
 			return m_mapPairColor.size();
+		}
+
+		public void PrintPanels()
+		{
+			// Calculate extents of visited panels
+			
+			Pair pairMin = new Pair(0,0);
+			Pair pairMax = new Pair(0,0);
+
+			for (Pair pair : m_mapPairColor.keySet())
+			{
+				pairMin = pairMin.Min(pair);
+				pairMax = pairMax.Max(pair);
+			}
+
+			// Iterate over extents printing out . values for black and # values for white
+			
+			for (int y = pairMin.m_y; y <= pairMax.m_y; ++y)
+			{
+				for (int x = pairMin.m_x; x <= pairMax.m_x; ++x)
+				{
+					Color color = m_mapPairColor.getOrDefault(new Pair(x,y), Color.BLACK);
+					System.out.print((color == Color.BLACK) ? '.' : '#');
+				}
+
+				System.out.println();
+			}
 		}
 
 		void RotateLeft()
