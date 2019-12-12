@@ -5,7 +5,24 @@ class Day12
 {
 	public static void main(String[] args)
 	{
-		Example1();
+		// Example1();
+		Part1();
+	}
+
+	static void Part1()
+	{
+		int[][] aaPos = {
+			{ -10, -10, -13 },
+			{ 5, 5, -9 },
+			{ 3, 8, -16 },
+			{ 1, 3, -3 },
+		};
+
+		Sim sim = new Sim();
+		sim.SetPlanets(aaPos);
+		sim.SetDebug(false);
+		sim.Run(1000);
+		sim.ShowEnergy();
 	}
 
 	static void Example1()
@@ -68,6 +85,17 @@ class Day12
 					}
 				}
 			}
+		}
+
+		public void ShowEnergy()
+		{
+			int total = 0;
+			for (int iP = 0; iP < m_aaPosPlanet.length; ++iP)
+			{
+				total += NEnergy(iP);
+			}
+
+			System.out.println("Total energy: " + total);
 		}
 
 		void UpdateVelocity()
