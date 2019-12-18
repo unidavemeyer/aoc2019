@@ -120,6 +120,13 @@ class Day12
 		//
 		// Gah. What if the problem is that there's a sub-part in there someplace that *also* overlaps? If those things occur on boundaries
 		// between the three patterns that work out evenly, then I could have something earlier than the cycle that I calculated?
+		// Oh. Hmm. Or, since things would have matched going 0 -> min(cycle), they should also match min(cycle)-> 0 as we approach the full
+		// zero match case...right? Oh, but I don't know about velocities. Rats. I forgot that data only tracks pos. I guess I need to redo
+		// my checking to check the full per-axis 8-value tuple. I'll try that tomorrow and see what happens.
+		//
+		// I discussed a bit with RJ, and what I missed (which is clear in retrospect) is that I need the LCM of the values for the
+		// individual cycles. I'm going to take a step back and try again, with a full calculate-it-all system, and make sure it
+		// does the right thing for the example cases and my case. Er, when I get back to trying this again, that is.
 	}
 
 	static long Reduce(long[] aN)
