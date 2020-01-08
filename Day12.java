@@ -25,66 +25,14 @@ class Day12
 		Sim sim = new Sim();
 		sim.SetPlanets(aaPos);
 		sim.SetDebug(false);
-		sim.SetTrackEnergy(true);
+		sim.SetTrackCycles(true);
 		sim.Run(1000000);
 		sim.ShowEnergy();
 	}
 
 	static void Part2()
 	{
-		// axis 0 (x): cycles 0 -> 83810 = 83811 -> 167621 = 0, 167622 = 167623, 167264 = 0 -> X = Y = 83810 -> 335245 = 0, 335246 = 335247 = 167622, etc.
-		// axis 1 (y): cycles 0 -> 115805 = 115806 -> 231611 = 0, 231612 = 231613, 231614 = 0 -> 347419 = 347420 -> 463255 = 0, 463266 = 463267 = 231612, etc.
-		// axis 2 (z): cycles 0 -> 51176 = 51177 -> 102353 = 0, 102354 = 102355, 102356 = 0 -> 153532 = 153533 = 51176 -> 204709 = 0, then 204710 = 204711 = 102354, etc.
-
-		// Check to see if these numbers reduce by anything interesting; if so, print the GCD, the reduced bits, and the resulting product
-		//  (mathematically, I'm guaranteed to hit a repeat after the product of all of these cycles, but there might be an earlier one if they
-		//  have other factors in common)
-
-		long[] aN = { 167622, 231612, 102354 };
-
-		if (true)
-		{
-			int factor = 0;
-		reduce:
-			for (int n = 102354; n > 1; --n)
-			{
-				for (int i = 0; i < 3; ++i)
-				{
-					if ((aN[i] / n) * n != aN[i])
-						continue reduce;
-				}
-
-				// Found a factor!
-
-				factor = n;
-				break;
-			}
-
-			if (factor != 0)
-			{
-				for (int i = 0; i < 3; ++i)
-				{
-					aN[i] = aN[i] / factor;
-				}
-			}
-
-			long product = aN[0] * aN[1] * aN[2];
-			assert (product / (aN[0] * factor) * (aN[0] * factor) == product);
-			assert (product / (aN[1] * factor) * (aN[1] * factor) == product);
-			assert (product / (aN[2] * factor) * (aN[2] * factor) == product);
-		}
-
-		System.out.println("operands: " + aN[0] + ", " + aN[1] + "," + aN[2] + "; product: " + (aN[0] * aN[1] * aN[2]));
-
-		// OK, super frustrating. I feel like I'm right on the edge of it, but I don't have it somehow. If I just straight multiply through
-		//  the factors together, then I end up with a product that's too big. That sort of makes sense to me -- I think half way through
-		//  (since these are a->b, b->a patterns) we should have a match...maybe? Maybe I also need to check velocity? Gah! I haven't checked
-		//  that at all. :/ I have only been checking position. Grr. Anyway, I've apparently now inputted too many guesses, so it's no longer
-		//  telling me if I'm over or under. I tried reducing everything by a factor of 6 and using that product, and one more than that, and
-		//  those said they were too small. So I'm missing something in there somehow, which is...annoying.
-		//
-		//  I'm going to try displaying the positions *and* velocities of the different axes at the known end-ish or repeat-ish points and
-		//  see if that sheds any light on what's going on. Grr.
+		// Calculate, per axis, what the frequency of repetition of the pattern is
 
 		int[][] aaPos = {
 			{ -10, -10, -13 },
@@ -96,37 +44,43 @@ class Day12
 		Sim sim = new Sim();
 		sim.SetPlanets(aaPos);
 		sim.SetDebug(false);
-		sim.SetTrackEnergy(false);
-		sim.Run(231615);
-		sim.ShowEnergy();
+		sim.SetTrackCycles(true);
+		sim.Run(1000000);
 
-		// OK, yeah, the velocities are key here. What a drag. So, for axis 0, step 0 and step 167624 (or maybe step 0 and step 167623 by their counting?) are the same.
-		// Rewrote my test slightly, so now I see that "after step 0" (which matches the example) and "after step 167624" are the same pos *and* velocity. So my 167622 is off by 2.
-		// I think that would apply through the rest, so my numbers should actually be these:
+		int[] mpAxisCycle = sim.MpAxisCycle();
 
-		long[] aNTry2 = { 167624, 231614, 102356 };
+		// Calculate the LCM of the axes. Instead of prime factoring (which sounds cool but hard) I'm going to instead just brute force my way there.
+		//  The smallest the LCM can be is the largest of the cycle values, and the largest it can be is the product of them.
 
-		long factor = 0;
-		if (true)
+		long lcm = mpAxisCycle[0];
+		lcm = Long.max(lcm, mpAxisCycle[1]);
+		lcm = Long.max(lcm, mpAxisCycle[2]);
+
+		while (true)
 		{
-			factor = Reduce(aNTry2);
+			int axis;
+			for (axis = 0; axis < 3; ++axis)
+			{
+				long rem = lcm % mpAxisCycle[axis];
+				if (rem != 0)
+					break;
+			}
+
+			if (axis == 3)
+			{
+				// Found the LCM
+
+				break;
+			}
+			else
+			{
+				// Try the next value
+
+				lcm++;
+			}
 		}
 
-		System.out.println("Better attempt, reduced product (by " + factor + "): " + (aNTry2[0] * aNTry2[1] * aNTry2[2]));
-
-		// Bleah. I am reduced to tracking what I have submitted so that I don't keep submitting the same thing over and over again.
-		// I tried 3973876011060416 but that was wrong. That is the straight up product of the three sizes.
-		// The sizes do all have a factor of two in common
-		//
-		// Gah. What if the problem is that there's a sub-part in there someplace that *also* overlaps? If those things occur on boundaries
-		// between the three patterns that work out evenly, then I could have something earlier than the cycle that I calculated?
-		// Oh. Hmm. Or, since things would have matched going 0 -> min(cycle), they should also match min(cycle)-> 0 as we approach the full
-		// zero match case...right? Oh, but I don't know about velocities. Rats. I forgot that data only tracks pos. I guess I need to redo
-		// my checking to check the full per-axis 8-value tuple. I'll try that tomorrow and see what happens.
-		//
-		// I discussed a bit with RJ, and what I missed (which is clear in retrospect) is that I need the LCM of the values for the
-		// individual cycles. I'm going to take a step back and try again, with a full calculate-it-all system, and make sure it
-		// does the right thing for the example cases and my case. Er, when I get back to trying this again, that is.
+		System.out.println("LCM: " + lcm);
 	}
 
 	static long Reduce(long[] aN)
@@ -184,20 +138,22 @@ class Day12
 
 		int[][] m_aaVPlanet = null;
 
-		ArrayList<HashMap<Integer, Integer>> m_listMapAxisStep = null;
+		int[] m_mpAxisDi = null;
+
+		ArrayList<HashMap<String, Integer>> m_mpAxisMapStateStep = null;
 
 		boolean m_fDebug = false;
 
-		boolean m_fTrackEnergy = false;
+		boolean m_fTrackCycles = false;
 
 		public void SetDebug(boolean fDebug)
 		{
 			m_fDebug = fDebug;
 		}
 
-		public void SetTrackEnergy(boolean fTrack)
+		public void SetTrackCycles(boolean fTrack)
 		{
-			m_fTrackEnergy = fTrack;
+			m_fTrackCycles = fTrack;
 		}
 
 		public void SetPlanets(int[][] aaPos)
@@ -213,58 +169,67 @@ class Day12
 			}
 		}
 
+		public int[] MpAxisCycle()
+		{
+			return m_mpAxisDi;
+		}
+
 		public void Run(int cStep)
 		{
-			if (m_fTrackEnergy)
+			boolean[] mpAxisFFound = new boolean[3];
+			mpAxisFFound[0] = false;
+			mpAxisFFound[1] = false;
+			mpAxisFFound[2] = false;
+
+			if (m_fTrackCycles)
 			{
-				m_listMapAxisStep = new ArrayList<HashMap<Integer, Integer>>();
-				m_listMapAxisStep.add(new HashMap<Integer, Integer>());
-				m_listMapAxisStep.add(new HashMap<Integer, Integer>());
-				m_listMapAxisStep.add(new HashMap<Integer, Integer>());
+				m_mpAxisMapStateStep = new ArrayList<HashMap<String, Integer>>();
+				for (int axis = 0; axis < 3; ++axis)
+				{
+					m_mpAxisMapStateStep.add(new HashMap<String, Integer>());
+				}
+
+				m_mpAxisDi = new int[3];
+				m_mpAxisDi[0] = 0;
+				m_mpAxisDi[1] = 0;
+				m_mpAxisDi[2] = 0;
 			}
 
 			for (int iStep = 0; iStep < cStep; ++iStep)
 			{
-				long[] aN = { 167624, 231614, 102356 };
-
-				for (int i = 0; i < 3; ++i)
+				if (m_fTrackCycles)
 				{
-					if (Math.abs(aN[i] - iStep) < 3 ||
-							Math.abs(aN[i] / 2 - iStep) < 3 ||
-							iStep == 0 || iStep == 1 || iStep == 2)
+					for (int axis = 0; axis < 3; ++axis)
 					{
-						System.out.println("Axis " + i + ": after " + iStep + " steps, pos: " +
-								m_aaPosPlanet[0][i] + ", " +
-								m_aaPosPlanet[1][i] + ", " +
-								m_aaPosPlanet[2][i] + ", " +
-								m_aaPosPlanet[3][i] + "; " +
-								"velocity: " +
-								m_aaVPlanet[0][i] + ", " +
-								m_aaVPlanet[1][i] + ", " +
-								m_aaVPlanet[2][i] + ", " +
-								m_aaVPlanet[3][i]);
+						if (mpAxisFFound[axis])
+							continue;
+
+						// Construct a string representing the state for this axis at this cycle
+
+						String strAxis = "<" + m_aaPosPlanet[0][axis] + "," + m_aaPosPlanet[1][axis] + "," + m_aaPosPlanet[2][axis] + "><" +
+										m_aaVPlanet[0][axis] + "," + m_aaVPlanet[1][axis] + "," + m_aaVPlanet[2][axis] + ">";
+
+						// Check for the string in the map
+
+						if (m_mpAxisMapStateStep.get(axis).containsKey(strAxis))
+						{
+							mpAxisFFound[axis] = true;
+
+							int iStepOther = m_mpAxisMapStateStep.get(axis).get(strAxis);
+
+							System.out.println("Step " + iStep + " is the same as step " + iStepOther + " for axis " + axis + " (period " + (iStep - iStepOther) + ")");
+
+							m_mpAxisDi[axis] = iStep - iStepOther;
+						}
+						else
+						{
+							m_mpAxisMapStateStep.get(axis).put(strAxis, iStep);
+						}
 					}
 				}
 
 				UpdateVelocity();
 				UpdatePosition();
-
-				if (m_fTrackEnergy)
-				{
-					for (int axis = 0; axis < 3; ++axis)
-					{
-						int n = m_aaPosPlanet[0][axis] + 500 * m_aaPosPlanet[1][axis] + 250000 * m_aaPosPlanet[2][axis] + 125000000 * m_aaPosPlanet[3][axis];
-
-						if (m_listMapAxisStep.get(axis).containsKey(n))
-						{
-							System.out.println("Axis " + axis + " same at " + iStep + " as " + m_listMapAxisStep.get(axis).get(n));
-						}
-						else
-						{
-							m_listMapAxisStep.get(axis).put(n, iStep);
-						}
-					}
-				}
 
 				if (m_fDebug)
 				{
