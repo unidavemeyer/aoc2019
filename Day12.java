@@ -49,38 +49,86 @@ class Day12
 
 		int[] mpAxisCycle = sim.MpAxisCycle();
 
-		// Calculate the LCM of the axes. Instead of prime factoring (which sounds cool but hard) I'm going to instead just brute force my way there.
-		//  The smallest the LCM can be is the largest of the cycle values, and the largest it can be is the product of them.
+		// Calculate the LCM of the axes. Tried brute-forcing it, but that didn't work (sigh) because it took too long, so I'm doing
+		//  a real version (calculate prime factorization of each value and then resulting amount).
 
-		long lcm = mpAxisCycle[0];
-		lcm = Long.max(lcm, mpAxisCycle[1]);
-		lcm = Long.max(lcm, mpAxisCycle[2]);
+		long lcm = LcmCompute(mpAxisCycle);
 
-		while (true)
+		System.out.println("LCM: " + lcm);
+	}
+
+	static long LcmCompute(int[] aN)
+	{
+		HashMap<Integer, Integer> mpFactorC = new HashMap<>();
+
+		for (int n : aN)
 		{
-			int axis;
-			for (axis = 0; axis < 3; ++axis)
+			ArrayList<Integer> listFactor = ListNPrimeFactor(n);
+
+			System.out.println("Factors for " + n + ": " + listFactor);
+
+			int factorPrev = -1; 
+			int count = 0;
+
+			for (int factor : listFactor)
 			{
-				long rem = lcm % mpAxisCycle[axis];
-				if (rem != 0)
-					break;
+				if (factor != factorPrev)
+				{
+					if (factorPrev > 0)
+					{
+						int countPrev = mpFactorC.getOrDefault(factorPrev, 0);
+						count = Integer.max(countPrev, count);
+						mpFactorC.put(factorPrev, count);
+					}
+
+					factorPrev = factor;
+					count = 1;
+				}
+				else
+				{
+					count++;
+				}
 			}
 
-			if (axis == 3)
+			if (factorPrev > 0)
 			{
-				// Found the LCM
-
-				break;
-			}
-			else
-			{
-				// Try the next value
-
-				lcm++;
+				int countPrev = mpFactorC.getOrDefault(factorPrev, 0);
+				count = Integer.max(countPrev, count);
+				mpFactorC.put(factorPrev, count);
 			}
 		}
 
-		System.out.println("LCM: " + lcm);
+		System.out.println("Overall factors: " + mpFactorC);
+
+		long lcm = 1;
+
+		for (int factor : mpFactorC.keySet())
+		{
+			for (int i = 0; i < mpFactorC.get(factor); ++i)
+			{
+				lcm *= factor;
+			}
+		}
+
+		return lcm;
+	}
+
+	static ArrayList<Integer> ListNPrimeFactor(int n)
+	{
+		ArrayList<Integer> listFactor = new ArrayList<Integer>();
+
+		int factor = 2;
+		while (n > 1)
+		{
+			while (n % factor == 0)
+			{
+				listFactor.add(factor);
+				n /= factor;
+			}
+			 ++factor;
+		}
+
+		return listFactor;
 	}
 
 	static long Reduce(long[] aN)
